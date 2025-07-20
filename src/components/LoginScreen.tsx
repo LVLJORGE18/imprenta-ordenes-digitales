@@ -12,16 +12,17 @@ interface LoginScreenProps {
 }
 
 const USERS = [
-  { username: "admin", password: "admin123", role: "Administrador", name: "Carlos Rodríguez" },
-  { username: "operador1", password: "op123", role: "Operador", name: "María González" },
-  { username: "operador2", password: "op456", role: "Operador", name: "José Martínez" },
-  { username: "supervisor", password: "sup789", role: "Supervisor", name: "Ana López" },
+  { username: "ivan", password: "ivan123", role: "Administrador", name: "Ivan" },
+  { username: "sergio", password: "sergio123", role: "Operador", name: "Sergio" },
+  { username: "david", password: "david123", role: "Supervisor", name: "David Ortega" },
+  { username: "jonathan", password: "jonathan123", role: "Operador", name: "Jonathan" },
+  { username: "marco", password: "marco123", role: "Operador", name: "Marco" },
 ];
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedUser, setSelectedUser] = useState("");
+  
   const { toast } = useToast();
 
   const handleLogin = () => {
@@ -42,12 +43,6 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     }
   };
 
-  const handleQuickLogin = () => {
-    const user = USERS.find(u => u.username === selectedUser);
-    if (user) {
-      onLogin(user);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/5 flex items-center justify-center p-4">
@@ -109,51 +104,20 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               Iniciar Sesión
             </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">O selecciona un usuario</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Acceso rápido</Label>
-              <Select value={selectedUser} onValueChange={setSelectedUser}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un usuario de prueba" />
-                </SelectTrigger>
-                <SelectContent>
-                  {USERS.map((user) => (
-                    <SelectItem key={user.username} value={user.username}>
-                      {user.name} - {user.role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button 
-                onClick={handleQuickLogin}
-                variant="secondary"
-                className="w-full"
-                disabled={!selectedUser}
-              >
-                Acceso Rápido
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
-        {/* Información de usuarios demo */}
+        {/* Información de usuarios */}
         <Card className="bg-muted/50">
           <CardHeader>
-            <CardTitle className="text-sm">Usuarios de Prueba</CardTitle>
+            <CardTitle className="text-sm">Usuarios del Sistema</CardTitle>
           </CardHeader>
           <CardContent className="text-xs space-y-1">
-            <div><strong>Administrador:</strong> admin / admin123</div>
-            <div><strong>Operador 1:</strong> operador1 / op123</div>
-            <div><strong>Operador 2:</strong> operador2 / op456</div>
-            <div><strong>Supervisor:</strong> supervisor / sup789</div>
+            <div><strong>Ivan:</strong> ivan / ivan123</div>
+            <div><strong>Sergio:</strong> sergio / sergio123</div>
+            <div><strong>David Ortega:</strong> david / david123</div>
+            <div><strong>Jonathan:</strong> jonathan / jonathan123</div>
+            <div><strong>Marco:</strong> marco / marco123</div>
           </CardContent>
         </Card>
       </div>
