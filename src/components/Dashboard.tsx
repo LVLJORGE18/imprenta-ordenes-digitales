@@ -3,6 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "next-themes";
 import { 
   Plus, 
   FileText, 
@@ -14,9 +25,13 @@ import {
   Printer,
   Scissors,
   ImageIcon,
-  LogOut
+  LogOut,
+  Settings,
+  Moon,
+  Sun
 } from "lucide-react";
 import CreateOrderDialog from "./CreateOrderDialog";
+import OrderDetailsDialog from "./OrderDetailsDialog";
 
 interface User {
   username: string;
@@ -65,6 +80,14 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   ]);
 
   const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  const handleOrderClick = (order: Order) => {
+    setSelectedOrder(order);
+    setShowOrderDetails(true);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -112,10 +135,38 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               <p className="text-sm font-medium text-foreground">{user.name}</p>
               <p className="text-xs text-muted-foreground">{user.role}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={onLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Cerrar Sesión
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Configuración</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                <div className="px-2 py-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="dark-mode" className="text-sm flex items-center space-x-2">
+                      {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                      <span>Modo Oscuro</span>
+                    </Label>
+                    <Switch
+                      id="dark-mode"
+                      checked={theme === 'dark'}
+                      onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                    />
+                  </div>
+                </div>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogout} className="text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Cerrar Sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -188,10 +239,14 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               <CardContent>
                 <div className="space-y-4">
                   {orders.map((order) => (
-                    <div key={order.id} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                    <div 
+                      key={order.id} 
+                      className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer hover:border-primary/50"
+                      onClick={() => handleOrderClick(order)}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
-                          <span className="font-semibold">{order.folio}</span>
+                          <span className="font-semibold text-primary">{order.folio}</span>
                           <Badge variant={getStatusColor(order.status) as any}>
                             {order.status}
                           </Badge>
@@ -214,6 +269,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                       <div className="mt-2 text-sm">
                         <span className="text-muted-foreground">Fecha límite: </span>
                         <span className="font-medium">{order.dueDate}</span>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Click para ver detalles
                       </div>
                     </div>
                   ))}
@@ -291,6 +349,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           setOrders([...orders, newOrder]);
           setShowCreateOrder(false);
         }}
+      />
+
+      <OrderDetailsDialog 
+        order={selectedOrder}
+        open={showOrderDetails}
+        onOpenChange={setShowOrderDetails}
       />
     </div>
   );
