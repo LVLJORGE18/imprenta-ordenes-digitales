@@ -34,7 +34,8 @@ import {
 } from "lucide-react";
 import CreateOrderDialog from "./CreateOrderDialog";
 import OrderDetailsDialog from "./OrderDetailsDialog";
-import StatsPanel from "./StatsPanel";
+import StatsDialog from "./StatsDialog";
+import UserManagementDialog from "./UserManagementDialog";
 
 interface User {
   id: string;
@@ -110,6 +111,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const handleOrderClick = (order: Order) => {
@@ -328,14 +330,18 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   <Button 
                     variant="outline" 
                     className="w-full justify-start"
-                    onClick={() => setShowStats(!showStats)}
+                    onClick={() => setShowStats(true)}
                   >
                     <TrendingUp className="w-4 h-4 mr-2" />
                     Estadísticas
                   </Button>
                 )}
                 {user.role === "Administrador" && (
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setShowUserManagement(true)}
+                  >
                     <Users className="w-4 h-4 mr-2" />
                     Gestionar Usuarios
                   </Button>
@@ -374,13 +380,6 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             </Card>
           </div>
         </div>
-        
-        {/* Estadísticas Panel - Solo para Administradores */}
-        {user.role === "Administrador" && showStats && (
-          <div className="mt-6">
-            <StatsPanel />
-          </div>
-        )}
       </div>
 
       <CreateOrderDialog
@@ -395,6 +394,16 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         order={selectedOrder}
         open={showOrderDetails}
         onOpenChange={setShowOrderDetails}
+      />
+
+      <StatsDialog 
+        open={showStats}
+        onOpenChange={setShowStats}
+      />
+
+      <UserManagementDialog 
+        open={showUserManagement}
+        onOpenChange={setShowUserManagement}
       />
     </div>
   );
