@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +36,7 @@ import CreateOrderDialog from "./CreateOrderDialog";
 import OrderDetailsDialog from "./OrderDetailsDialog";
 
 interface User {
+  id: string;
   username: string;
   role: string;
   name: string;
@@ -48,36 +51,59 @@ interface Order {
   id: string;
   folio: string;
   client: string;
-  workType: string;
+  work_type: string;
   status: string;
-  createdAt: string;
-  dueDate: string;
   priority: string;
+  description?: string;
+  notes?: string;
+  files?: any;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  due_date?: string;
 }
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "1",
-      folio: "ORD-2024-001",
-      client: "Empresa ABC",
-      workType: "Impresión de Lonas",
-      status: "En Proceso",
-      createdAt: "2024-01-15",
-      dueDate: "2024-01-20",
-      priority: "Alta"
-    },
-    {
-      id: "2", 
-      folio: "ORD-2024-002",
-      client: "Negocio XYZ",
-      workType: "Vinil de Corte",
-      status: "Completado",
-      createdAt: "2024-01-14",
-      dueDate: "2024-01-18",
-      priority: "Media"
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching orders:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar las órdenes",
+          variant: "destructive",
+        });
+      } else {
+        setOrders(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-ES');
+  };
 
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -254,7 +280,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                             {order.priority}
                           </Badge>
                         </div>
-                        <span className="text-sm text-muted-foreground">{order.createdAt}</span>
+                        <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -263,12 +289,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                         </div>
                         <div>
                           <p className="text-muted-foreground">Tipo de Trabajo:</p>
-                          <p className="font-medium">{order.workType}</p>
+                          <p className="font-medium">{order.work_type}</p>
                         </div>
                       </div>
                       <div className="mt-2 text-sm">
                         <span className="text-muted-foreground">Fecha límite: </span>
-                        <span className="font-medium">{order.dueDate}</span>
+                        <span className="font-medium">{order.due_date ? formatDate(order.due_date) : 'Sin fecha límite'}</span>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">
                         Click para ver detalles
@@ -346,8 +372,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         open={showCreateOrder}
         onOpenChange={setShowCreateOrder}
         onOrderCreated={(newOrder) => {
-          setOrders([...orders, newOrder]);
-          setShowCreateOrder(false);
+          fetchOrders(); // Refrescar la lista de órdenes
         }}
       />
 

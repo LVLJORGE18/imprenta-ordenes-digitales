@@ -1,17 +1,13 @@
-import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { 
   Calendar, 
   User, 
   FileText, 
   Clock, 
   AlertCircle, 
-  Phone, 
-  Mail,
   Folder,
   Download,
   Eye
@@ -21,16 +17,16 @@ interface Order {
   id: string;
   folio: string;
   client: string;
-  workType: string;
+  work_type: string;
   status: string;
-  createdAt: string;
-  dueDate: string;
   priority: string;
   description?: string;
   notes?: string;
-  phone?: string;
-  email?: string;
-  files?: { [key: string]: File[] };
+  files?: any;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  due_date?: string;
 }
 
 interface OrderDetailsDialogProps {
@@ -45,7 +41,7 @@ export default function OrderDetailsDialog({ order, open, onOpenChange }: OrderD
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Completado": return "default";
-      case "En Proceso": return "secondary"; 
+      case "En proceso": return "secondary"; 
       case "Pendiente": return "outline";
       case "Urgente": return "destructive";
       default: return "secondary";
@@ -70,8 +66,8 @@ export default function OrderDetailsDialog({ order, open, onOpenChange }: OrderD
   };
 
   const getTotalFiles = () => {
-    if (!order.files) return 0;
-    return Object.values(order.files).reduce((total, files) => total + files.length, 0);
+    if (!order.files || !Array.isArray(order.files)) return 0;
+    return order.files.length;
   };
 
   return (
@@ -94,8 +90,8 @@ export default function OrderDetailsDialog({ order, open, onOpenChange }: OrderD
               </div>
             </div>
             <div className="text-right text-sm text-muted-foreground">
-              <div>Creado: {formatDate(order.createdAt)}</div>
-              <div>Entrega: {formatDate(order.dueDate)}</div>
+              <div>Creado: {formatDate(order.created_at)}</div>
+              {order.due_date && <div>Entrega: {formatDate(order.due_date)}</div>}
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -114,18 +110,6 @@ export default function OrderDetailsDialog({ order, open, onOpenChange }: OrderD
                 <label className="text-sm font-medium text-muted-foreground">Cliente:</label>
                 <p className="font-semibold">{order.client}</p>
               </div>
-              {order.phone && (
-                <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">{order.phone}</span>
-                </div>
-              )}
-              {order.email && (
-                <div className="flex items-center space-x-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">{order.email}</span>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -140,20 +124,22 @@ export default function OrderDetailsDialog({ order, open, onOpenChange }: OrderD
             <CardContent className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Tipo de Trabajo:</label>
-                <p className="font-semibold">{order.workType}</p>
+                <p className="font-semibold">{order.work_type}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Fecha de Entrega:</label>
-                  <p className="font-semibold">{formatDate(order.dueDate)}</p>
+              {order.due_date && (
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Fecha de Entrega:</label>
+                    <p className="font-semibold">{formatDate(order.due_date)}</p>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex items-center space-x-2">
                 <Clock className="w-4 h-4 text-muted-foreground" />
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Fecha de Creación:</label>
-                  <p className="font-semibold">{formatDate(order.createdAt)}</p>
+                  <p className="font-semibold">{formatDate(order.created_at)}</p>
                 </div>
               </div>
             </CardContent>
@@ -199,40 +185,30 @@ export default function OrderDetailsDialog({ order, open, onOpenChange }: OrderD
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(order.files).map(([area, files]) => {
-                  if (files.length === 0) return null;
-                  
-                  return (
-                    <div key={area} className="border border-border rounded-lg p-4">
-                      <h4 className="font-medium mb-3 flex items-center space-x-2">
-                        <Folder className="w-4 h-4" />
-                        <span>Área: {area}</span>
-                        <Badge variant="secondary">{files.length} archivos</Badge>
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {files.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between bg-muted/50 rounded p-3">
-                            <div className="flex items-center space-x-2 flex-1">
-                              <FileText className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm truncate">{file.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                ({(file.size / 1024).toFixed(1)} KB)
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                                <Eye className="w-3 h-3" />
-                              </Button>
-                              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                                <Download className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                <div className="border border-border rounded-lg p-4">
+                  <h4 className="font-medium mb-3 flex items-center space-x-2">
+                    <Folder className="w-4 h-4" />
+                    <span>Archivos adjuntos</span>
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {Array.isArray(order.files) && order.files.map((file: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between bg-muted/50 rounded p-3">
+                        <div className="flex items-center space-x-2 flex-1">
+                          <FileText className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm truncate">{file.name || `Archivo ${index + 1}`}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                            <Download className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

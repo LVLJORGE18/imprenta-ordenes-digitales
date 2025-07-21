@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -81,7 +82,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.client || !formData.workType || !formData.dueDate) {
       toast({
         title: "Campos requeridos",
@@ -91,39 +92,77 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
       return;
     }
 
-    const newOrder = {
-      id: Date.now().toString(),
-      folio: generateFolio(),
-      client: formData.client,
-      workType: WORK_TYPES.find(w => w.id === formData.workType)?.name || formData.workType,
-      status: "Pendiente",
-      createdAt: new Date().toISOString().split('T')[0],
-      dueDate: formData.dueDate,
-      priority: PRIORITIES.find(p => p.value === formData.priority)?.label || "Media",
-      description: formData.description,
-      notes: formData.notes,
-      files: selectedFiles
-    };
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "Usuario no autenticado",
+          variant: "destructive"
+        });
+        return;
+      }
 
-    onOrderCreated(newOrder);
-    
-    toast({
-      title: "Orden creada exitosamente",
-      description: `Folio: ${newOrder.folio}`,
-    });
+      const folio = generateFolio();
+      const workTypeName = WORK_TYPES.find(w => w.id === formData.workType)?.name || formData.workType;
+      const priorityLabel = PRIORITIES.find(p => p.value === formData.priority)?.label || "Media";
 
-    // Reset form
-    setFormData({
-      client: "",
-      phone: "",
-      email: "",
-      workType: "",
-      priority: "media",
-      dueDate: "",
-      description: "",
-      notes: ""
-    });
-    setSelectedFiles({});
+      const { data, error } = await supabase
+        .from('orders')
+        .insert({
+          folio: folio,
+          client: formData.client,
+          work_type: workTypeName,
+          status: "Pendiente",
+          priority: priorityLabel,
+          description: formData.description || null,
+          notes: formData.notes || null,
+          files: Object.keys(selectedFiles).length > 0 ? JSON.stringify(selectedFiles) : null,
+          created_by: user.id,
+          due_date: formData.dueDate ? new Date(formData.dueDate).toISOString() : null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating order:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo crear la orden",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      onOrderCreated(data);
+      onOpenChange(false);
+      
+      toast({
+        title: "Orden creada exitosamente",
+        description: `Folio: ${folio}`,
+      });
+
+      // Reset form
+      setFormData({
+        client: "",
+        phone: "",
+        email: "",
+        workType: "",
+        priority: "media",
+        dueDate: "",
+        description: "",
+        notes: ""
+      });
+      setSelectedFiles({});
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
