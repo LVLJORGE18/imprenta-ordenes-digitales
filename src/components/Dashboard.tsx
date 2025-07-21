@@ -151,7 +151,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               <Printer className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">ImprintaOS</h1>
+              <h1 className="text-xl font-bold text-foreground">ORTEGA</h1>
               <p className="text-sm text-muted-foreground">Sistema de Gestión</p>
             </div>
           </div>

@@ -159,7 +159,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
             <Printer className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">ImprintaOS</h1>
+          <h1 className="text-3xl font-bold text-foreground">ORTEGA</h1>
           <p className="text-muted-foreground">Sistema de Gestión de Órdenes</p>
         </div>
 
@@ -168,152 +168,42 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Acceso al Sistema</CardTitle>
             <CardDescription className="text-center">
-              Inicia sesión o registra una nueva cuenta
+              Inicia sesión con tu cuenta
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="signup">Registrarse</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login" className="space-y-4 mt-4">
+            <div className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="correo@ejemplo.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="usuario@ejemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
-                
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Contraseña</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="Ingresa tu contraseña"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                      onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                    />
-                  </div>
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
                 </div>
-
                 <Button 
-                  onClick={handleLogin} 
-                  className="w-full"
-                  disabled={isLoading || !email || !password}
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
                 >
                   {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
                 </Button>
-              </TabsContent>
-
-              <TabsContent value="signup" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="correo@ejemplo.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-username">Usuario</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-username"
-                      type="text"
-                      placeholder="Nombre de usuario"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nombre Completo</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="Nombre completo"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-role">Rol</Label>
-                  <Select value={role} onValueChange={setRole}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un rol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Administrador">Administrador</SelectItem>
-                      <SelectItem value="Supervisor">Supervisor</SelectItem>
-                      <SelectItem value="Operador">Operador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Contraseña</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="Mínimo 6 caracteres"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmar Contraseña</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      placeholder="Confirma tu contraseña"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleSignUp} 
-                  className="w-full"
-                  disabled={isLoading || !email || !password || !confirmPassword || !username || !name || !role}
-                >
-                  {isLoading ? "Registrando..." : "Registrarse"}
-                </Button>
-              </TabsContent>
-            </Tabs>
+              </form>
+            </div>
           </CardContent>
         </Card>
       </div>
