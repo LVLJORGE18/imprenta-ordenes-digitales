@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import CreateOrderDialog from "./CreateOrderDialog";
 import OrderDetailsDialog from "./OrderDetailsDialog";
+import StatsPanel from "./StatsPanel";
 
 interface User {
   id: string;
@@ -108,6 +109,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const handleOrderClick = (order: Order) => {
@@ -322,10 +324,16 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                   <FileText className="w-4 h-4 mr-2" />
                   Ver Reportes
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Estadísticas
-                </Button>
+                {user.role === "Administrador" && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setShowStats(!showStats)}
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Estadísticas
+                  </Button>
+                )}
                 {user.role === "Administrador" && (
                   <Button variant="outline" className="w-full justify-start">
                     <Users className="w-4 h-4 mr-2" />
@@ -366,9 +374,16 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             </Card>
           </div>
         </div>
+        
+        {/* Estadísticas Panel - Solo para Administradores */}
+        {user.role === "Administrador" && showStats && (
+          <div className="mt-6">
+            <StatsPanel />
+          </div>
+        )}
       </div>
 
-      <CreateOrderDialog 
+      <CreateOrderDialog
         open={showCreateOrder}
         onOpenChange={setShowCreateOrder}
         onOrderCreated={(newOrder) => {
