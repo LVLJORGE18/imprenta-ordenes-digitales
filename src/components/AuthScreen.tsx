@@ -37,18 +37,45 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Intentando iniciar sesión con:", email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log("Resultado de login:", { data, error });
+
       if (error) {
+        console.error("Error de autenticación:", error);
         toast({
           title: "Error de autenticación",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        console.log("Login exitoso, datos del usuario:", data);
+        
+        // Verificar que el usuario tenga un perfil
+        if (data.user) {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', data.user.id)
+            .single();
+            
+          console.log("Perfil del usuario:", { profile, profileError });
+          
+          if (profileError) {
+            toast({
+              title: "Error",
+              description: "No se pudo cargar el perfil del usuario",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+        
         toast({
           title: "Inicio de sesión exitoso",
           description: "Bienvenido al sistema",
@@ -56,6 +83,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         onAuthSuccess();
       }
     } catch (error) {
+      console.error("Error inesperado:", error);
       toast({
         title: "Error",
         description: "Ocurrió un error inesperado",
