@@ -201,7 +201,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -224,13 +224,17 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                   />
                 </div>
                 <Button 
-                  type="submit" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log("Button clicked");
+                    handleLogin();
+                  }}
                   className="w-full" 
                   disabled={isLoading}
                 >
                   {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
                 </Button>
-              </form>
+              </div>
             </div>
           </CardContent>
         </Card>
