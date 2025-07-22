@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       orders: {
         Row: {
+          advance_payment: number | null
           client: string
           created_at: string
           created_by: string
@@ -26,11 +27,14 @@ export type Database = {
           id: string
           notes: string | null
           priority: string
+          remaining_balance: number | null
           status: string
+          total_amount: number | null
           updated_at: string
           work_type: string
         }
         Insert: {
+          advance_payment?: number | null
           client: string
           created_at?: string
           created_by: string
@@ -41,11 +45,14 @@ export type Database = {
           id?: string
           notes?: string | null
           priority?: string
+          remaining_balance?: number | null
           status?: string
+          total_amount?: number | null
           updated_at?: string
           work_type: string
         }
         Update: {
+          advance_payment?: number | null
           client?: string
           created_at?: string
           created_by?: string
@@ -56,7 +63,9 @@ export type Database = {
           id?: string
           notes?: string | null
           priority?: string
+          remaining_balance?: number | null
           status?: string
+          total_amount?: number | null
           updated_at?: string
           work_type?: string
         }

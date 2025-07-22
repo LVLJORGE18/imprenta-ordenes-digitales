@@ -50,7 +50,9 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
     priority: "media",
     dueDate: "",
     description: "",
-    notes: ""
+    notes: "",
+    totalAmount: "",
+    advancePayment: ""
   });
 
   const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File[] }>({});
@@ -83,7 +85,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
   };
 
   const handleSubmit = async () => {
-    if (!formData.client || !formData.workType || !formData.dueDate) {
+    if (!formData.client || !formData.workType || !formData.dueDate || !formData.totalAmount) {
       toast({
         title: "Campos requeridos",
         description: "Por favor completa todos los campos obligatorios",
@@ -107,6 +109,19 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
       const folio = generateFolio();
       const workTypeName = WORK_TYPES.find(w => w.id === formData.workType)?.name || formData.workType;
       const priorityLabel = PRIORITIES.find(p => p.value === formData.priority)?.label || "Media";
+      
+      const totalAmount = parseFloat(formData.totalAmount) || 0;
+      const advancePayment = parseFloat(formData.advancePayment) || 0;
+      const remainingBalance = totalAmount - advancePayment;
+      
+      // Agregar información de pago a las notas si hay saldo pendiente
+      let finalNotes = formData.notes || "";
+      if (remainingBalance > 0) {
+        const paymentInfo = `\n\n--- INFORMACIÓN DE PAGO ---\nTotal: $${totalAmount.toFixed(2)}\nAnticipo: $${advancePayment.toFixed(2)}\nSaldo pendiente: $${remainingBalance.toFixed(2)}`;
+        finalNotes += paymentInfo;
+      } else if (remainingBalance === 0 && advancePayment > 0) {
+        finalNotes += `\n\n--- INFORMACIÓN DE PAGO ---\nTotal: $${totalAmount.toFixed(2)}\nPAGO COMPLETO RECIBIDO`;
+      }
 
       const { data, error } = await supabase
         .from('orders')
@@ -117,10 +132,12 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
           status: "Pendiente",
           priority: priorityLabel,
           description: formData.description || null,
-          notes: formData.notes || null,
+          notes: finalNotes || null,
           files: Object.keys(selectedFiles).length > 0 ? JSON.stringify(selectedFiles) : null,
           created_by: user.id,
-          due_date: formData.dueDate ? new Date(formData.dueDate).toISOString() : null
+          due_date: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
+          total_amount: totalAmount,
+          advance_payment: advancePayment
         })
         .select()
         .single();
@@ -152,7 +169,9 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
         priority: "media",
         dueDate: "",
         description: "",
-        notes: ""
+        notes: "",
+        totalAmount: "",
+        advancePayment: ""
       });
       setSelectedFiles({});
     } catch (error) {
@@ -266,7 +285,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
               </div>
 
               <div>
-                <Label htmlFor="dueDate">Fecha de Entrega *</Label>
+                 <Label htmlFor="dueDate">Fecha de Entrega *</Label>
                 <Input
                   id="dueDate"
                   type="date"
@@ -274,6 +293,50 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Información de Pago */}
+          <Card className="col-span-1 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <span>💰</span>
+                <span>Información de Pago</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="totalAmount">Total del Trabajo *</Label>
+                <Input
+                  id="totalAmount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.totalAmount}
+                  onChange={(e) => setFormData({ ...formData, totalAmount: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="advancePayment">Anticipo/Pago</Label>
+                <Input
+                  id="advancePayment"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={formData.totalAmount || undefined}
+                  value={formData.advancePayment}
+                  onChange={(e) => setFormData({ ...formData, advancePayment: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              {formData.totalAmount && formData.advancePayment && (
+                <div className="col-span-1 md:col-span-2 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm font-medium">
+                    Saldo pendiente: ${(parseFloat(formData.totalAmount) - parseFloat(formData.advancePayment)).toFixed(2)}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -29,7 +29,8 @@ const ROLES = [
   { value: "Administrador", label: "Administrador" },
   { value: "estación 1", label: "Estación 1" },
   { value: "estación 3", label: "Estación 3" },
-  { value: "estación 4", label: "Estación 4" }
+  { value: "estación 4", label: "Estación 4" },
+  { value: "Caja", label: "Caja" }
 ];
 
 export default function UserManagementDialog({ open, onOpenChange }: UserManagementDialogProps) {
@@ -160,13 +161,13 @@ export default function UserManagementDialog({ open, onOpenChange }: UserManagem
     }
 
     try {
-      // Actualizar perfil
+      // Actualizar perfil usando id en lugar de user_id
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           name: editForm.name
         })
-        .eq('user_id', editingUser.user_id);
+        .eq('id', editingUser.id);
 
       if (profileError) {
         throw profileError;
@@ -215,7 +216,7 @@ export default function UserManagementDialog({ open, onOpenChange }: UserManagem
       const { error } = await supabase
         .from('profiles')
         .delete()
-        .eq('user_id', user.user_id);
+        .eq('id', user.id);
 
       if (error) {
         throw error;
