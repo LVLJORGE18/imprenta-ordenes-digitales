@@ -36,6 +36,8 @@ import CreateOrderDialog from "./CreateOrderDialog";
 import OrderDetailsDialog from "./OrderDetailsDialog";
 import StatsDialog from "./StatsDialog";
 import UserManagementDialog from "./UserManagementDialog";
+import ProductionAreas from "./ProductionAreas";
+import AdminOrdersView from "./AdminOrdersView";
 
 interface User {
   id: string;
@@ -76,10 +78,17 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      // Si no es administrador, filtrar solo las órdenes del usuario actual
+      if (user.role !== "Administrador") {
+        query = query.eq('created_by', user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching orders:', error);
@@ -253,61 +262,76 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Orders List */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Órdenes de Trabajo</CardTitle>
-                    <CardDescription>Gestión de órdenes activas</CardDescription>
-                  </div>
-                  <Button onClick={() => setShowCreateOrder(true)} className="bg-accent hover:bg-accent/90">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nueva Orden
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div 
-                      key={order.id} 
-                      className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer hover:border-primary/50"
-                      onClick={() => handleOrderClick(order)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-semibold text-primary">{order.folio}</span>
-                          <Badge variant={getStatusColor(order.status) as any}>
-                            {order.status}
-                          </Badge>
-                          <Badge variant={getPriorityColor(order.priority) as any}>
-                            {order.priority}
-                          </Badge>
-                        </div>
-                        <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Cliente:</p>
-                          <p className="font-medium">{order.client}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Tipo de Trabajo:</p>
-                          <p className="font-medium">{order.work_type}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 text-sm">
-                        <span className="text-muted-foreground">Fecha límite: </span>
-                        <span className="font-medium">{order.due_date ? formatDate(order.due_date) : 'Sin fecha límite'}</span>
-                      </div>
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Click para ver detalles
-                      </div>
+            {user.role === "Administrador" ? (
+              <AdminOrdersView 
+                onOrderClick={handleOrderClick}
+                formatDate={formatDate}
+                getStatusColor={getStatusColor}
+                getPriorityColor={getPriorityColor}
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Mis Órdenes de Trabajo</CardTitle>
+                      <CardDescription>Órdenes que has creado</CardDescription>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <Button onClick={() => setShowCreateOrder(true)} className="bg-accent hover:bg-accent/90">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Nueva Orden
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {orders.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No tienes órdenes registradas
+                      </div>
+                    ) : (
+                      orders.map((order) => (
+                        <div 
+                          key={order.id} 
+                          className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer hover:border-primary/50"
+                          onClick={() => handleOrderClick(order)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-semibold text-primary">{order.folio}</span>
+                              <Badge variant={getStatusColor(order.status) as any}>
+                                {order.status}
+                              </Badge>
+                              <Badge variant={getPriorityColor(order.priority) as any}>
+                                {order.priority}
+                              </Badge>
+                            </div>
+                            <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Cliente:</p>
+                              <p className="font-medium">{order.client}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Tipo de Trabajo:</p>
+                              <p className="font-medium">{order.work_type}</p>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-sm">
+                            <span className="text-muted-foreground">Fecha límite: </span>
+                            <span className="font-medium">{order.due_date ? formatDate(order.due_date) : 'Sin fecha límite'}</span>
+                          </div>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            Click para ver detalles
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Quick Actions */}
@@ -349,35 +373,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Áreas de Producción</CardTitle>
-                <CardDescription>Estado de las áreas</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                  <div className="flex items-center space-x-2">
-                    <ImageIcon className="w-4 h-4 text-primary" />
-                    <span className="text-sm">Impresión Lonas</span>
-                  </div>
-                  <Badge variant="default">2 trabajos</Badge>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                  <div className="flex items-center space-x-2">
-                    <Printer className="w-4 h-4 text-primary" />
-                    <span className="text-sm">Impresión Vinil</span>
-                  </div>
-                  <Badge variant="outline">0 trabajos</Badge>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                  <div className="flex items-center space-x-2">
-                    <Scissors className="w-4 h-4 text-primary" />
-                    <span className="text-sm">Vinil de Corte</span>
-                  </div>
-                  <Badge variant="secondary">1 trabajo</Badge>
-                </div>
-              </CardContent>
-            </Card>
+            <ProductionAreas />
           </div>
         </div>
       </div>

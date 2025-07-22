@@ -161,13 +161,18 @@ export default function UserManagementDialog({ open, onOpenChange }: UserManagem
     }
 
     try {
-      // Actualizar perfil usando id en lugar de user_id
-      const { error: profileError } = await supabase
+      console.log('Actualizando usuario:', { editingUser, editForm });
+      
+      // Actualizar perfil usando user_id
+      const { data, error: profileError } = await supabase
         .from('profiles')
         .update({
           name: editForm.name
         })
-        .eq('id', editingUser.id);
+        .eq('user_id', editingUser.user_id)
+        .select();
+
+      console.log('Resultado actualización:', { data, profileError });
 
       if (profileError) {
         throw profileError;
