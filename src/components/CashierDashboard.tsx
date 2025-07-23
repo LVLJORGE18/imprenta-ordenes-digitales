@@ -52,6 +52,9 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
 
@@ -88,11 +91,42 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
     }
   };
 
-  const markAsDelivered = async () => {
+  const deliverOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setShowPaymentDialog(true);
+  };
+
+  const cancelOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ delivery_status: 'Cancelado' })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Pedido cancelado",
+        description: "El pedido ha sido cancelado exitosamente"
+      });
+
+      if (searchTerm) {
+        searchOrders();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Error al cancelar el pedido",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const registerPayment = async () => {
     if (!selectedOrder || !paymentMethod) {
       toast({
         title: "Campos requeridos",
-        description: "Selecciona un método de pago",
+        description: "Completa todos los campos",
         variant: "destructive"
       });
       return;
@@ -105,17 +139,19 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single();
 
+      const paymentAmountNum = parseFloat(paymentAmount) || 0;
+      const newAdvancePayment = selectedOrder.advance_payment + paymentAmountNum;
+      
       const updates: any = {
-        delivery_status: 'Entregado',
-        payment_method: paymentMethod,
-        delivered_at: new Date().toISOString(),
-        delivered_by: profileData?.id
+        advance_payment: newAdvancePayment,
+        payment_method: paymentMethod
       };
 
-      // Si hay saldo pendiente y se está pagando, actualizar el saldo
-      if (selectedOrder.remaining_balance && selectedOrder.remaining_balance > 0) {
-        updates.advance_payment = selectedOrder.total_amount || selectedOrder.advance_payment;
-        updates.remaining_balance = 0;
+      // Si el pago cubre el total, marcar como entregado
+      if (newAdvancePayment >= (selectedOrder.total_amount || 0)) {
+        updates.delivery_status = 'Entregado';
+        updates.delivered_at = new Date().toISOString();
+        updates.delivered_by = profileData?.id;
       }
 
       const { error } = await supabase
@@ -123,28 +159,28 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
         .update(updates)
         .eq('id', selectedOrder.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
-        title: "Pedido entregado",
-        description: `El pedido ${selectedOrder.folio} ha sido marcado como entregado`
+        title: "Pago registrado",
+        description: updates.delivery_status === 'Entregado' 
+          ? "Pago completado y pedido entregado"
+          : "Pago parcial registrado exitosamente"
       });
 
       setSelectedOrder(null);
       setPaymentMethod("");
+      setPaymentAmount("");
+      setShowPaymentDialog(false);
       
-      // Actualizar resultados de búsqueda
       if (searchTerm) {
         searchOrders();
       }
 
     } catch (error: any) {
-      console.error('Error marking as delivered:', error);
       toast({
         title: "Error",
-        description: "Error al marcar como entregado",
+        description: "Error al registrar el pago",
         variant: "destructive"
       });
     }
@@ -312,17 +348,39 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
                     </div>
                   </div>
 
-                  {order.delivery_status !== 'Entregado' && (
-                    <div className="flex justify-end">
-                      <Button
-                        onClick={() => setSelectedOrder(order)}
-                        disabled={order.status !== 'Completado'}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Marcar como Entregado
-                      </Button>
+                  <div className="flex justify-between items-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setShowOrderDetails(true);
+                      }}
+                    >
+                      <Package className="w-4 h-4 mr-2" />
+                      Ver Detalles
+                    </Button>
+                    
+                    <div className="flex space-x-2">
+                      {order.delivery_status !== 'Entregado' && order.delivery_status !== 'Cancelado' && (
+                        <>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => cancelOrder(order.id)}
+                          >
+                            Cancelar Pedido
+                          </Button>
+                          <Button
+                            onClick={() => deliverOrder(order)}
+                            disabled={order.status !== 'Completado'}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Marcar como Entregado
+                          </Button>
+                        </>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -339,34 +397,140 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
         </Card>
       )}
       
-      {/* Dialog para confirmar entrega */}
-      {selectedOrder && (
-        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+      {/* Dialog para ver detalles de orden */}
+      {selectedOrder && showOrderDetails && (
+        <Dialog open={showOrderDetails} onOpenChange={() => {
+          setShowOrderDetails(false);
+          setSelectedOrder(null);
+        }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Detalles del Pedido {selectedOrder.folio}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Cliente:</label>
+                  <p>{selectedOrder.client}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Tipo de trabajo:</label>
+                  <p>{selectedOrder.work_type}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Estado:</label>
+                  <Badge className={getStatusColor(selectedOrder.status)}>
+                    {selectedOrder.status}
+                  </Badge>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Prioridad:</label>
+                  <Badge className={getPriorityColor(selectedOrder.priority)}>
+                    {selectedOrder.priority}
+                  </Badge>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Total:</label>
+                  <p className="font-semibold">{formatCurrency(selectedOrder.total_amount)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Anticipo:</label>
+                  <p>{formatCurrency(selectedOrder.advance_payment)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Saldo pendiente:</label>
+                  <p className={selectedOrder.remaining_balance && selectedOrder.remaining_balance > 0 ? "text-red-600 font-semibold" : "text-green-600"}>
+                    {formatCurrency(selectedOrder.remaining_balance)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Estado de entrega:</label>
+                  <Badge variant={selectedOrder.delivery_status === 'Entregado' ? 'default' : 'outline'}>
+                    {selectedOrder.delivery_status}
+                  </Badge>
+                </div>
+              </div>
+              
+              {selectedOrder.description && (
+                <div>
+                  <label className="text-sm font-medium">Descripción:</label>
+                  <p className="text-sm bg-gray-50 p-2 rounded">{selectedOrder.description}</p>
+                </div>
+              )}
+              
+              {selectedOrder.notes && (
+                <div>
+                  <label className="text-sm font-medium">Notas:</label>
+                  <p className="text-sm bg-gray-50 p-2 rounded">{selectedOrder.notes}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2">
+                {selectedOrder.remaining_balance && selectedOrder.remaining_balance > 0 && (
+                  <Button onClick={() => {
+                    setShowOrderDetails(false);
+                    setShowPaymentDialog(true);
+                  }}>
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Registrar Pago
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => {
+                  setShowOrderDetails(false);
+                  setSelectedOrder(null);
+                }}>
+                  Cerrar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Dialog para registrar pago */}
+      {selectedOrder && showPaymentDialog && (
+        <Dialog open={showPaymentDialog} onOpenChange={() => {
+          setShowPaymentDialog(false);
+          setSelectedOrder(null);
+          setPaymentMethod("");
+          setPaymentAmount("");
+        }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Entregar Pedido</DialogTitle>
+              <DialogTitle>Registrar Pago - {selectedOrder.folio}</DialogTitle>
               <DialogDescription>
-                Confirma la entrega del pedido {selectedOrder.folio}
+                Registra el pago para completar la entrega
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Cliente:</label>
-                <p>{selectedOrder.client}</p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Total del pedido:</label>
-                <p>{formatCurrency(selectedOrder.total_amount)}</p>
-              </div>
-              {selectedOrder.remaining_balance && selectedOrder.remaining_balance > 0 && (
-                <div className="space-y-2 p-3 bg-yellow-50 rounded-lg">
-                  <label className="text-sm font-medium text-yellow-800">Saldo pendiente:</label>
-                  <p className="font-semibold text-yellow-800">{formatCurrency(selectedOrder.remaining_balance)}</p>
-                  <p className="text-xs text-yellow-700">
-                    El cliente debe pagar el saldo pendiente para completar la entrega
-                  </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Total del pedido:</label>
+                  <p className="font-semibold">{formatCurrency(selectedOrder.total_amount)}</p>
                 </div>
-              )}
+                <div>
+                  <label className="text-sm font-medium">Ya pagado:</label>
+                  <p>{formatCurrency(selectedOrder.advance_payment)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Saldo pendiente:</label>
+                  <p className="font-semibold text-red-600">{formatCurrency(selectedOrder.remaining_balance)}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Monto a pagar:</label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  min="0"
+                  max={selectedOrder.remaining_balance || 0}
+                  step="0.01"
+                />
+              </div>
+              
               <div className="space-y-2">
                 <label className="text-sm font-medium">Método de pago:</label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -382,13 +546,19 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
                   </SelectContent>
                 </Select>
               </div>
+              
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+                <Button variant="outline" onClick={() => {
+                  setShowPaymentDialog(false);
+                  setSelectedOrder(null);
+                  setPaymentMethod("");
+                  setPaymentAmount("");
+                }}>
                   Cancelar
                 </Button>
-                <Button onClick={markAsDelivered}>
+                <Button onClick={registerPayment}>
                   <DollarSign className="w-4 h-4 mr-2" />
-                  Confirmar Entrega
+                  Registrar Pago
                 </Button>
               </div>
             </div>
