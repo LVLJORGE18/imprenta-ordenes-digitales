@@ -67,12 +67,12 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
     try {
       setIsLoading(true);
       
-      // Buscar por folio o cliente, excluyendo los pedidos entregados
+      // Buscar por folio o cliente, excluyendo los pedidos entregados y cancelados
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .or(`folio.ilike.%${searchTerm}%,client.ilike.%${searchTerm}%`)
-        .neq('delivery_status', 'Entregado')
+        .not('delivery_status', 'in', '(Entregado,Cancelado)')
         .order('created_at', { ascending: false });
 
       if (error) {
