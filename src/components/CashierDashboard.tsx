@@ -67,11 +67,12 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
     try {
       setIsLoading(true);
       
-      // Buscar por folio o cliente
+      // Buscar por folio o cliente, excluyendo los pedidos entregados
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .or(`folio.ilike.%${searchTerm}%,client.ilike.%${searchTerm}%`)
+        .neq('delivery_status', 'Entregado')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -91,9 +92,50 @@ export default function CashierDashboard({ onLogout }: { onLogout?: () => void }
     }
   };
 
-  const deliverOrder = (order: Order) => {
-    setSelectedOrder(order);
-    setShowPaymentDialog(true);
+  const deliverOrder = async (order: Order) => {
+    // Validar que no tenga saldo pendiente
+    if (order.remaining_balance && order.remaining_balance > 0) {
+      toast({
+        title: "Error",
+        description: "Este trabajo presenta un saldo pendiente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          delivery_status: 'Entregado',
+          delivered_at: new Date().toISOString(),
+          delivered_by: profileData?.id
+        })
+        .eq('id', order.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Pedido entregado",
+        description: "El pedido ha sido marcado como entregado exitosamente"
+      });
+
+      if (searchTerm) {
+        searchOrders();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Error al marcar el pedido como entregado",
+        variant: "destructive"
+      });
+    }
   };
 
   const cancelOrder = async (orderId: string) => {
