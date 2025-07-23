@@ -39,6 +39,7 @@ import UserManagementDialog from "./UserManagementDialog";
 import ProductionAreas from "./ProductionAreas";
 import AdminOrdersView from "./AdminOrdersView";
 import CashierDashboard from "./CashierDashboard";
+import CreateCashierButton from "./CreateCashierButton";
 
 interface User {
   id: string;
@@ -375,6 +376,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                     <Users className="w-4 h-4 mr-2" />
                     Gestionar Usuarios
                   </Button>
+                )}
+                {user.role === "Administrador" && (
+                  <CreateCashierButton />
                 )}
               </CardContent>
             </Card>
