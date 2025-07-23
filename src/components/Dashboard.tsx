@@ -38,6 +38,7 @@ import StatsDialog from "./StatsDialog";
 import UserManagementDialog from "./UserManagementDialog";
 import ProductionAreas from "./ProductionAreas";
 import AdminOrdersView from "./AdminOrdersView";
+import CashierDashboard from "./CashierDashboard";
 
 interface User {
   id: string;
@@ -153,6 +154,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     pendingOrders: orders.filter(o => o.status === "En Proceso").length,
     urgentOrders: orders.filter(o => o.priority === "Alta").length,
   };
+
+  // Si es usuario de Caja, mostrar dashboard específico
+  if (user.role === "Caja") {
+    return <CashierDashboard />;
+  }
 
   return (
     <div className="min-h-screen bg-background">

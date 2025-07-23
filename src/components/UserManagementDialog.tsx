@@ -30,7 +30,8 @@ const ROLES = [
   { value: "estación 1", label: "Estación 1" },
   { value: "estación 3", label: "Estación 3" },
   { value: "estación 4", label: "Estación 4" },
-  { value: "Caja", label: "Caja" }
+  { value: "Caja", label: "Caja" },
+  { value: "estación 2", label: "Estación 2" }
 ];
 
 export default function UserManagementDialog({ open, onOpenChange }: UserManagementDialogProps) {
@@ -163,19 +164,23 @@ export default function UserManagementDialog({ open, onOpenChange }: UserManagem
     try {
       console.log('Actualizando usuario:', { editingUser, editForm });
       
-      // Actualizar perfil usando user_id
+      // Actualizar perfil usando id (no user_id)
       const { data, error: profileError } = await supabase
         .from('profiles')
         .update({
           name: editForm.name
         })
-        .eq('user_id', editingUser.user_id)
+        .eq('id', editingUser.id)
         .select();
 
       console.log('Resultado actualización:', { data, profileError });
 
       if (profileError) {
         throw profileError;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error("No se pudo actualizar el perfil");
       }
 
       // Si hay nueva contraseña, actualizarla

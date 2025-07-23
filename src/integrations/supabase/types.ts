@@ -20,12 +20,16 @@ export type Database = {
           client: string
           created_at: string
           created_by: string
+          delivered_at: string | null
+          delivered_by: string | null
+          delivery_status: string | null
           description: string | null
           due_date: string | null
           files: Json | null
           folio: string
           id: string
           notes: string | null
+          payment_method: string | null
           priority: string
           remaining_balance: number | null
           status: string
@@ -38,12 +42,16 @@ export type Database = {
           client: string
           created_at?: string
           created_by: string
+          delivered_at?: string | null
+          delivered_by?: string | null
+          delivery_status?: string | null
           description?: string | null
           due_date?: string | null
           files?: Json | null
           folio: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
           priority?: string
           remaining_balance?: number | null
           status?: string
@@ -56,12 +64,16 @@ export type Database = {
           client?: string
           created_at?: string
           created_by?: string
+          delivered_at?: string | null
+          delivered_by?: string | null
+          delivery_status?: string | null
           description?: string | null
           due_date?: string | null
           files?: Json | null
           folio?: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
           priority?: string
           remaining_balance?: number | null
           status?: string
@@ -69,7 +81,15 @@ export type Database = {
           updated_at?: string
           work_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_delivered_by_fkey"
+            columns: ["delivered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
