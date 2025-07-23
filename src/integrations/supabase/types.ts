@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           advance_payment: number | null
           client: string
+          completed_at: string | null
+          completed_by: string | null
           created_at: string
           created_by: string
           delivered_at: string | null
@@ -31,6 +33,7 @@ export type Database = {
           notes: string | null
           payment_method: string | null
           priority: string
+          production_status: string | null
           remaining_balance: number | null
           status: string
           total_amount: number | null
@@ -40,6 +43,8 @@ export type Database = {
         Insert: {
           advance_payment?: number | null
           client: string
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           created_by: string
           delivered_at?: string | null
@@ -53,6 +58,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           priority?: string
+          production_status?: string | null
           remaining_balance?: number | null
           status?: string
           total_amount?: number | null
@@ -62,6 +68,8 @@ export type Database = {
         Update: {
           advance_payment?: number | null
           client?: string
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string
           created_by?: string
           delivered_at?: string | null
@@ -75,6 +83,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           priority?: string
+          production_status?: string | null
           remaining_balance?: number | null
           status?: string
           total_amount?: number | null
@@ -82,6 +91,13 @@ export type Database = {
           work_type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_delivered_by_fkey"
             columns: ["delivered_by"]
