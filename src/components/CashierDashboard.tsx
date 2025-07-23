@@ -6,8 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Package, DollarSign, CheckCircle } from "lucide-react";
+import { Search, Package, DollarSign, CheckCircle, Settings, LogOut, Moon, Sun, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Order {
   id: string;
@@ -34,7 +45,7 @@ const PAYMENT_METHODS = [
   { value: "transferencia", label: "Transferencia Bancaria" }
 ];
 
-export default function CashierDashboard() {
+export default function CashierDashboard({ onLogout }: { onLogout?: () => void }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Order[]>([]);
@@ -42,6 +53,7 @@ export default function CashierDashboard() {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   const searchOrders = async () => {
     if (!searchTerm.trim()) {
@@ -166,10 +178,57 @@ export default function CashierDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Gestión de Caja</h1>
-      </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Printer className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">ORTEGA</h1>
+              <p className="text-sm text-muted-foreground">Gestión de Caja</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4">            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Configuración</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                <div className="px-2 py-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="dark-mode" className="text-sm flex items-center space-x-2">
+                      {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                      <span>Modo Oscuro</span>
+                    </Label>
+                    <Switch
+                      id="dark-mode"
+                      checked={theme === 'dark'}
+                      onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                    />
+                  </div>
+                </div>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogout} className="text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Cerrar Sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto p-6 space-y-6">
 
       {/* Barra de búsqueda */}
       <Card>
@@ -255,68 +314,13 @@ export default function CashierDashboard() {
 
                   {order.delivery_status !== 'Entregado' && (
                     <div className="flex justify-end">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            onClick={() => setSelectedOrder(order)}
-                            disabled={order.status !== 'Completado'}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Marcar como Entregado
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Entregar Pedido</DialogTitle>
-                            <DialogDescription>
-                              Confirma la entrega del pedido {order.folio}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Cliente:</label>
-                              <p>{order.client}</p>
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Total del pedido:</label>
-                              <p>{formatCurrency(order.total_amount)}</p>
-                            </div>
-                            {order.remaining_balance && order.remaining_balance > 0 && (
-                              <div className="space-y-2 p-3 bg-yellow-50 rounded-lg">
-                                <label className="text-sm font-medium text-yellow-800">Saldo pendiente:</label>
-                                <p className="font-semibold text-yellow-800">{formatCurrency(order.remaining_balance)}</p>
-                                <p className="text-xs text-yellow-700">
-                                  El cliente debe pagar el saldo pendiente para completar la entrega
-                                </p>
-                              </div>
-                            )}
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Método de pago:</label>
-                              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecciona método de pago" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {PAYMENT_METHODS.map((method) => (
-                                    <SelectItem key={method.value} value={method.value}>
-                                      {method.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                              <Button variant="outline" onClick={() => setSelectedOrder(null)}>
-                                Cancelar
-                              </Button>
-                              <Button onClick={markAsDelivered}>
-                                <DollarSign className="w-4 h-4 mr-2" />
-                                Confirmar Entrega
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        onClick={() => setSelectedOrder(order)}
+                        disabled={order.status !== 'Completado'}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Marcar como Entregado
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -334,6 +338,64 @@ export default function CashierDashboard() {
           </CardContent>
         </Card>
       )}
+      
+      {/* Dialog para confirmar entrega */}
+      {selectedOrder && (
+        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Entregar Pedido</DialogTitle>
+              <DialogDescription>
+                Confirma la entrega del pedido {selectedOrder.folio}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cliente:</label>
+                <p>{selectedOrder.client}</p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Total del pedido:</label>
+                <p>{formatCurrency(selectedOrder.total_amount)}</p>
+              </div>
+              {selectedOrder.remaining_balance && selectedOrder.remaining_balance > 0 && (
+                <div className="space-y-2 p-3 bg-yellow-50 rounded-lg">
+                  <label className="text-sm font-medium text-yellow-800">Saldo pendiente:</label>
+                  <p className="font-semibold text-yellow-800">{formatCurrency(selectedOrder.remaining_balance)}</p>
+                  <p className="text-xs text-yellow-700">
+                    El cliente debe pagar el saldo pendiente para completar la entrega
+                  </p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Método de pago:</label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona método de pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_METHODS.map((method) => (
+                      <SelectItem key={method.value} value={method.value}>
+                        {method.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={markAsDelivered}>
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Confirmar Entrega
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+      </div>
     </div>
   );
 }

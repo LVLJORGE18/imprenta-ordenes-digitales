@@ -158,7 +158,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   // Si es usuario de Caja, mostrar dashboard específico
   if (user.role === "Caja") {
-    return <CashierDashboard />;
+    return <CashierDashboard onLogout={onLogout} />;
   }
 
   return (

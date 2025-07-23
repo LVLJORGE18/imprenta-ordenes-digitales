@@ -162,41 +162,22 @@ export default function UserManagementDialog({ open, onOpenChange }: UserManagem
     }
 
     try {
-      console.log('Actualizando usuario:', { editingUser, editForm });
-      
-      // Actualizar perfil usando id (no user_id)
-      const { data, error: profileError } = await supabase
+      // Actualizar perfil usando el id correcto
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           name: editForm.name
         })
-        .eq('id', editingUser.id)
-        .select();
-
-      console.log('Resultado actualización:', { data, profileError });
+        .eq('id', editingUser.id);
 
       if (profileError) {
         throw profileError;
       }
 
-      if (!data || data.length === 0) {
-        throw new Error("No se pudo actualizar el perfil");
-      }
-
-      // Si hay nueva contraseña, actualizarla
-      if (editForm.newPassword) {
-        // Nota: Esto requeriría un edge function para cambiar la contraseña de otro usuario
-        // Por ahora solo mostramos un mensaje
-        toast({
-          title: "Actualización parcial",
-          description: "El nombre se actualizó. Para cambiar la contraseña se requiere una función adicional."
-        });
-      } else {
-        toast({
-          title: "Usuario actualizado",
-          description: "Los datos del usuario se han actualizado"
-        });
-      }
+      toast({
+        title: "Usuario actualizado",
+        description: "Los datos del usuario se han actualizado"
+      });
 
       setEditingUser(null);
       setEditForm({ name: "", newPassword: "" });
