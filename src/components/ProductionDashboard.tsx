@@ -60,10 +60,12 @@ const ProductionDashboard = () => {
     getUser();
   }, []);
 
-  // Cargar órdenes
+  // Cargar órdenes cuando el usuario esté disponible
   useEffect(() => {
-    loadOrders();
-  }, []);
+    if (user) {
+      loadOrders();
+    }
+  }, [user]);
 
   // Filtrar órdenes
   useEffect(() => {
@@ -83,15 +85,22 @@ const ProductionDashboard = () => {
     try {
       setIsLoading(true);
       
-      // Cargar órdenes de vinil que no estén entregadas ni canceladas
-      const { data, error } = await supabase
+      // Cargar órdenes que no estén entregadas ni canceladas
+      // El filtro por tipo de trabajo se aplica según el rol del usuario
+      let query = supabase
         .from('orders')
         .select('*')
         .not('delivery_status', 'in', '(Entregado,Cancelado)')
-        .ilike('work_type', '%vinil%')
         .in('production_status', ['Pendiente', 'En Proceso'])
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
+
+      // Si el usuario es de una estación específica, filtrar por tipo de trabajo
+      if (user?.role === 'estación 1') {
+        query = query.ilike('work_type', '%vinil%');
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error loading orders:', error);
