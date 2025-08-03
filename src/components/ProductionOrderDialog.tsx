@@ -11,8 +11,11 @@ import {
   Folder,
   CheckCircle,
   Package,
-  DollarSign
+  DollarSign,
+  Download
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Order {
   id: string;
@@ -98,6 +101,39 @@ export default function ProductionOrderDialog({
       return filesArray.length;
     } catch {
       return 0;
+    }
+  };
+
+  const getFilesArray = () => {
+    if (!order.files) return [];
+    try {
+      return Array.isArray(order.files) ? order.files : JSON.parse(order.files);
+    } catch {
+      return [];
+    }
+  };
+
+  const downloadFile = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('order-files')
+        .download(filePath);
+      
+      if (error) throw error;
+      
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Archivo ${fileName} descargado exitosamente`);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error("Error al descargar el archivo");
     }
   };
 
@@ -239,11 +275,29 @@ export default function ProductionOrderDialog({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">
-                    Se encontraron {getTotalFiles()} archivo(s) adjunto(s) para este trabajo
-                  </span>
+                <div className="space-y-3">
+                  {getFilesArray().map((file: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <p className="font-medium text-sm">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {file.size ? `${(file.size / 1024).toFixed(1)} KB` : 'Tamaño desconocido'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadFile(file.path, file.name)}
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Descargar
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

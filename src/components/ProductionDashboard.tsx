@@ -83,12 +83,13 @@ const ProductionDashboard = () => {
     try {
       setIsLoading(true);
       
-      // Cargar órdenes que no estén entregadas ni canceladas y que estén en producción
+      // Cargar órdenes de vinil que no estén entregadas ni canceladas
       const { data, error } = await supabase
         .from('orders')
         .select('*')
         .not('delivery_status', 'in', '(Entregado,Cancelado)')
-        .eq('status', 'En Proceso')
+        .ilike('work_type', '%vinil%')
+        .in('production_status', ['Pendiente', 'En Proceso'])
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
 

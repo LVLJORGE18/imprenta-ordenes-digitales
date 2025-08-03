@@ -123,6 +123,32 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
         finalNotes += `\n\n--- INFORMACIÓN DE PAGO ---\nTotal: $${totalAmount.toFixed(2)}\nPAGO COMPLETO RECIBIDO`;
       }
 
+      // Subir archivos a Supabase Storage
+      let uploadedFiles = [];
+      for (const [area, files] of Object.entries(selectedFiles)) {
+        for (const file of files) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${folio}/${area}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('order-files')
+            .upload(fileName, file);
+          
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+            throw uploadError;
+          }
+          
+          uploadedFiles.push({
+            name: file.name,
+            path: uploadData.path,
+            size: file.size,
+            type: file.type,
+            area: area
+          });
+        }
+      }
+
       const { data, error } = await supabase
         .from('orders')
         .insert({
@@ -133,7 +159,7 @@ export default function CreateOrderDialog({ open, onOpenChange, onOrderCreated }
           priority: priorityLabel,
           description: formData.description || null,
           notes: finalNotes || null,
-          files: Object.keys(selectedFiles).length > 0 ? JSON.stringify(selectedFiles) : null,
+          files: uploadedFiles.length > 0 ? uploadedFiles : null,
           created_by: user.id,
           due_date: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
           total_amount: totalAmount,
