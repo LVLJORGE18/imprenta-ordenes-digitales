@@ -7,7 +7,8 @@ import { ImageIcon, Printer, Scissors } from "lucide-react";
 interface Order {
   id: string;
   work_type: string;
-  status: string;
+  production_status: string;
+  delivery_status: string;
 }
 
 export default function ProductionAreas() {
@@ -16,7 +17,7 @@ export default function ProductionAreas() {
   useEffect(() => {
     fetchOrders();
     
-    // Configurar suscripción en tiempo real
+    // Configurar suscripción en tiempo real y polling cada 10 segundos
     const channel = supabase
       .channel('production-areas-updates')
       .on(
@@ -32,8 +33,14 @@ export default function ProductionAreas() {
       )
       .subscribe();
 
+    // Polling cada 10 segundos para asegurar datos actualizados
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 10000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 
@@ -41,14 +48,16 @@ export default function ProductionAreas() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, work_type, status')
-        .in('status', ['En Proceso', 'Pendiente']);
+        .select('id, work_type, production_status, delivery_status')
+        .in('production_status', ['Pendiente', 'En Proceso'])
+        .not('delivery_status', 'in', '(Entregado,Cancelado)');
 
       if (error) {
         console.error('Error fetching orders:', error);
         return;
       }
 
+      console.log('Production Areas - Orders loaded:', data?.length, data);
       setOrders(data || []);
     } catch (error) {
       console.error('Error:', error);
@@ -69,8 +78,8 @@ export default function ProductionAreas() {
     {
       name: "Impresión Vinil",
       icon: Printer,
-      workType: "Impresión en Vinil",
-      count: getWorksByType("Impresión en Vinil")
+      workType: "Impresión de Vinil",
+      count: getWorksByType("Impresión de Vinil")
     },
     {
       name: "Vinil de Corte",
