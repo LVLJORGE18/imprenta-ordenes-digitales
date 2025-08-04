@@ -84,7 +84,6 @@ const ProductionDashboard = () => {
   const loadOrders = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading orders, user:', user);
       
       // Cargar órdenes que no estén entregadas ni canceladas
       // El filtro por tipo de trabajo se aplica según el rol del usuario
@@ -99,11 +98,9 @@ const ProductionDashboard = () => {
       // Si el usuario es de una estación específica, filtrar por tipo de trabajo
       if (user?.role === 'estación 1') {
         query = query.eq('work_type', 'Impresión de Vinil');
-        console.log('Filtering for estación 1 user, work_type: Impresión de Vinil');
       }
 
       const { data, error } = await query;
-      console.log('Query result:', { data, error });
 
       if (error) {
         console.error('Error loading orders:', error);

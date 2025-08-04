@@ -40,6 +40,7 @@ import ProductionAreas from "./ProductionAreas";
 import AdminOrdersView from "./AdminOrdersView";
 import CashierDashboard from "./CashierDashboard";
 import CreateCashierButton from "./CreateCashierButton";
+import CreateVinilUserButton from "./CreateVinilUserButton";
 
 interface User {
   id: string;
@@ -379,6 +380,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
                 )}
                 {user.role === "Administrador" && (
                   <CreateCashierButton />
+                )}
+                {user.role === "Administrador" && (
+                  <CreateVinilUserButton />
                 )}
               </CardContent>
             </Card>
