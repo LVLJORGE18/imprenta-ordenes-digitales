@@ -97,7 +97,7 @@ const ProductionDashboard = () => {
 
       // Si el usuario es de una estación específica, filtrar por tipo de trabajo
       if (user?.role === 'estación 1') {
-        query = query.ilike('work_type', '%vinil%');
+        query = query.eq('work_type', 'Impresión de Vinil');
       }
 
       const { data, error } = await query;
@@ -278,7 +278,7 @@ const ProductionDashboard = () => {
                           )}
                         </div>
 
-                        {order.production_status === 'Pendiente' && (
+                        {(order.production_status === 'Pendiente' || order.production_status === 'En Proceso') && (
                           <div className="pt-2">
                             <Button
                               onClick={(e) => {

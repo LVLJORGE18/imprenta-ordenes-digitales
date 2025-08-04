@@ -318,7 +318,7 @@ export default function ProductionOrderDialog({
           )}
 
           {/* Botón de Acción */}
-          {order.production_status === 'Pendiente' && (
+          {(order.production_status === 'Pendiente' || order.production_status === 'En Proceso') && (
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button
                 onClick={onCompleteOrder}
